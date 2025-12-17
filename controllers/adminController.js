@@ -2,7 +2,7 @@ import jwt from "jsonwebtoken";
 import dotenv from "dotenv";
 import ContactForm from "../models/ContactForm.js";
 import Blog from "../models/Blog.js";
-import path from "path";
+import slugify from "slugify";
 
 dotenv.config();
 
@@ -61,22 +61,45 @@ export const getContacts = async (req, res) => {
 
 // CREATE BLOG (Admin Only)
 export const createBlog = async (req, res) => {
+    console.log(req.body); 
   try {
-    const { title, description, author, designation, category, features, publishedDate } = new Blog(req.body);
+    const {
+      title,
+      description,
+      author,
+      designation,
+      category,
+      tag,
+    } = req.body;
+
+    const tagsArray = typeof tag === "string" ? JSON.parse(tag || "[]") : tag || [];
     const image = req.file ? req.file.filename : null;
-    
+
+    // ✅ Generate clean slug
+    let baseSlug = slugify(title, {
+      lower: true,
+      strict: true,
+      trim: true,
+    });
+
+    let slug = baseSlug;
+    let count = 1;
+
+    // ✅ Ensure unique slug
+    while (await Blog.findOne({ url: slug })) {
+      slug = `${baseSlug}-${count++}`;
+    }
+
     const blog = await Blog.create({
       title,
       description,
       author,
       designation,
       category,
-      features,
-      publishedDate,
+      tag: tagsArray,
       image,
+      url: slug,
     });
-
-    await blog.save();
 
     res.status(201).json({
       success: true,
@@ -84,6 +107,7 @@ export const createBlog = async (req, res) => {
       blog,
     });
   } catch (err) {
+    console.error("create blog error:", err);
     res.status(500).json({
       success: false,
       message: "Error creating blog",
@@ -105,6 +129,31 @@ export const getBlogs = async (req, res) => {
     res.status(500).json({
       success: false,
       message: "Error fetching blogs",
+    });
+  }
+};
+
+// GET BLOG BY SLUG (Public)
+export const getBlogBySlug = async (req, res) => {
+  try {
+    const { slug } = req.params;
+
+    const blog = await Blog.findOne({ url: slug });
+    if (!blog) {
+      return res.status(404).json({
+        success: false,
+        message: "Blog not found",
+      });
+    }
+    res.status(200).json({
+      success: true,
+      blog,
+    });
+  }
+  catch (err) {
+    res.status(500).json({
+      success: false,
+      message: "Error fetching blog",
     });
   }
 };
@@ -131,23 +180,49 @@ export const getBlogById = async (req, res) => {
   }
 };
 
-// UPDATE BLOG (Admin Only)
-export const updateBlog = async (req, res) => {
+// UPDATE BLOG BY SLUG (Admin Only)
+export const updateBlogBySlug = async (req, res) => {
   try {
-    const { title, description, author, designation, category, features } = req.body;
+    const { title, description, author, designation, category, tag} = req.body;
     const image = req.file ? req.file.filename : null;
 
-    const updateData = { title, description, author, designation, category, features };
-    if (image) updateData.image = image;
-    const blog = await Blog.findByIdAndUpdate(req.params.id, updateData, {
-      new: true,
-    });
+    const tagsArray = typeof tag === "string" ? JSON.parse(tag || "[]") : tag || [];
+
+    // Find blog by slug
+    const blog = await Blog.findOne({ url: req.params.slug });
     if (!blog) {
       return res.status(404).json({
         success: false,
         message: "Blog not found",
       });
     }
+
+    // Prepare update
+    blog.title = title;
+    blog.description = description;
+    blog.author = author;
+    blog.designation = designation;
+    blog.category = category;
+    blog.tag = tagsArray;
+
+    // Handle title change → regenerate slug
+    if (title && title !== blog.title) {
+      let baseSlug = slugify(title, { lower: true, strict: true, trim: true });
+      let newSlug = baseSlug;
+      let count = 1;
+
+      while (
+        await Blog.findOne({ url: newSlug, _id: { $ne: blog._id } })
+      ) {
+        newSlug = `${baseSlug}-${count++}`;
+      }
+      blog.url = newSlug;
+    }
+
+    if (image) blog.image = image;
+
+    await blog.save();
+
     res.status(200).json({
       success: true,
       message: "Blog updated successfully",
@@ -160,7 +235,7 @@ export const updateBlog = async (req, res) => {
       error: err.message,
     });
   }
-};   
+};  
 
 // DELETE BLOG (Admin Only)
 export const deleteBlog = async (req, res) => {
@@ -187,3 +262,40 @@ export const deleteBlog = async (req, res) => {
   }
 };
 
+// SET FEATURED BLOG (Admin Only)
+export const setFeaturedBlog = async (req, res) => {
+  try {
+    const { slug } = req.params;
+
+    // 1️⃣ Remove previous featured blog
+    await Blog.updateMany(
+      { featured: true },
+      { $set: { featured: false } }
+    );
+
+    // 2️⃣ Set new featured blog
+    const blog = await Blog.findOneAndUpdate(
+      { url: slug },
+      { featured: true },
+      { new: true }
+    );
+
+    if (!blog) {
+      return res.status(404).json({
+        success: false,
+        message: "Blog not found",
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      message: "Blog set as featured successfully",
+      blog,
+    });
+  } catch (err) {
+    res.status(500).json({
+      success: false,
+      message: err.message,
+    });
+  }
+};
