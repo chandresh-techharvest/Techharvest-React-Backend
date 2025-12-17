@@ -6,9 +6,18 @@ const blogSchema = new mongoose.Schema({
   author: { type: String, required: true },
   designation: { type: String },
   category: { type: String, required: true },
-  features: { type: String },
-  publishedDate: { type: Date, default: Date.now },
+  tag: { type: [String], default: [] }, 
   image: { type: String },
+  url: {
+    type: String,
+    unique: true,
+    index: true,
+    required: true,
+  },
+    featured: {
+      type: Boolean,
+      default: false,
+    },
   createdAt: { type: Date, default: Date.now },
 });
 
