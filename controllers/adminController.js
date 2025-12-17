@@ -73,7 +73,8 @@ export const createBlog = async (req, res) => {
     } = req.body;
 
     const tagsArray = typeof tag === "string" ? JSON.parse(tag || "[]") : tag || [];
-    const image = req.file ? req.file.filename : null;
+    // const image = req.file ? req.file.filename : null;
+    const image = req.file ? req.file.path || req.file.location || null : null;
 
     // ✅ Generate clean slug
     let baseSlug = slugify(title, {
@@ -198,6 +199,7 @@ export const updateBlogBySlug = async (req, res) => {
     }
 
     // Prepare update
+    const oldTitle = blog.title;
     blog.title = title;
     blog.description = description;
     blog.author = author;
@@ -206,7 +208,7 @@ export const updateBlogBySlug = async (req, res) => {
     blog.tag = tagsArray;
 
     // Handle title change → regenerate slug
-    if (title && title !== blog.title) {
+    if (title && title !== oldTitle) {
       let baseSlug = slugify(title, { lower: true, strict: true, trim: true });
       let newSlug = baseSlug;
       let count = 1;

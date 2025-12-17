@@ -1,6 +1,6 @@
 import express from "express";
 import Contact from "../models/ContactForm.js";
-import verifyCaptcha from "../utiils/reCaptcha.js";
+import verifyCaptcha from "../utils/reCaptcha.js";
 
 
 const router = express.Router();
