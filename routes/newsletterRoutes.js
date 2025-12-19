@@ -1,5 +1,6 @@
 import express from "express";
 import Newsletter from "../models/Newsletter.js";
+import adminAuth from "../middleware/adminAuth.js";
 
 const router = express.Router();
 
@@ -27,15 +28,5 @@ router.post("/subscribe", async (req, res) => {
     res.status(500).json({ message: "Server error, please try again later." });
   }
 });
-
-// // GET - Retrieve all subscribers (for admin)
-// router.get("/subscribers", async (req, res) => {
-//   try {
-//     const subscribers = await Newsletter.find().sort({ createdAt: -1 });
-//     res.json(subscribers);
-//   } catch (error) {
-//     res.status(500).json({ message: "Failed to fetch subscribers" });
-//   }
-// });
 
 export default router;

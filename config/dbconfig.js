@@ -1,16 +1,28 @@
 import mongoose from "mongoose";
+import dotenv from "dotenv";
 
-const connectDB = async () => {
-  try {
-    const conn = await mongoose.connect(process.env.MONGO_URI, {
-      useNewUrlParser: true,
-      useUnifiedTopology: true,
+let isConnected = false;
+dotenv.config();
+
+function connectDB() {
+  if (isConnected) return;
+
+  console.log("🔄 Connecting to MongoDB...");
+  console.log("Mongo URI:", !!process.env.MONGO_URI);
+
+  mongoose
+  .connect(process.env.MONGO_URI, 
+    {
+      dbName:"THReact",
+    }
+  )
+  .then((conn) => {
+    isConnected = true;
+    console.log(`✅ MongoDB Connected: ${conn.connection.host}`);
+  })
+  .catch((err) => {
+      console.error("MongoDB Connection Error:", err.message);
     });
-    console.log(`MongoDB Connected: ${conn.connection.host}`);
-  } catch (error) {
-    console.error("❌ MongoDB Connection Error:", error.message);
-    process.exit(1);
-  }
-};
+}
 
 export default connectDB;

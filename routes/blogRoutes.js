@@ -4,15 +4,7 @@ import { createBlog, getBlogById, updateBlogBySlug, deleteBlog, setFeaturedBlog 
 import { getBlogs, getBlogBySlug, getFeaturedBlog, } from "../controllers/blogController.js";
 
 const router = express.Router();
-import multer from "multer";
-import path from "path";
-
-// Set up multer for image uploads
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => cb(null, "uploads/"),
-  filename: (req, file, cb) => cb(null, Date.now() + path.extname(file.originalname)),
-});
-const upload = multer({ storage });
+import { upload } from '../middleware/upload.js'
 
 // Public Routes
 router.get("/", getBlogs);
@@ -23,8 +15,8 @@ router.get("/featured", getFeaturedBlog);
 router.get("/id/:id", getBlogById);
 
 // Admin Protected
-router.post("/create",upload.single("image"), adminAuth, createBlog);
-router.put("/slug/:slug", upload.single("image"), adminAuth, updateBlogBySlug);
+router.post("/create", adminAuth, upload.single("image"), createBlog);
+router.put("/slug/:slug", adminAuth, upload.single("image"), updateBlogBySlug);
 router.delete("/delete/:id", adminAuth, deleteBlog);
 
 router.put("/featured/:slug", adminAuth, setFeaturedBlog);

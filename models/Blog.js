@@ -7,7 +7,7 @@ const blogSchema = new mongoose.Schema({
   designation: { type: String },
   category: { type: String, required: true },
   tag: { type: [String], default: [] }, 
-  image: { type: String },
+  image: { type: String , default: null},
   url: {
     type: String,
     unique: true,

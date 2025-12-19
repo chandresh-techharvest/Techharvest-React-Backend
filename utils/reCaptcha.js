@@ -1,8 +1,15 @@
-const {RecaptchaEnterpriseServiceClient} = require("@google-cloud/recaptcha-enterprise");
+import { RecaptchaEnterpriseServiceClient } from "@google-cloud/recaptcha-enterprise";
 
 // Create the reCAPTCHA client.
 // TODO: Cache the client generation code (recommended) or call client.close() before exiting the method.
-const client = new RecaptchaEnterpriseServiceClient();
+const privateKey = process.env.GOOGLE_PRIVATE_KEY.replace(/\\n/g,"\n");
+const client = new RecaptchaEnterpriseServiceClient({
+  projectId: process.env.GCLOUD_PROJECT,
+  credentials:{
+    client_email:process.env.GOOGLE_CLIENT_EMAIL,
+    private_key:privateKey,
+  },
+});
 
 async function verifyCaptcha(token) {
   const projectID = process.env.RECAPTCHA_PROJECT_ID;
@@ -19,6 +26,7 @@ async function verifyCaptcha(token) {
       event: {
         token: recaptchaToken,
         siteKey: recaptchaKey,
+        expectedAction:recaptchaAction,
       },
     },
     parent: projectPath,
@@ -51,4 +59,4 @@ async function verifyCaptcha(token) {
   }
 }
 
-module.exports = verifyCaptcha;
+export default verifyCaptcha;
