@@ -12,7 +12,7 @@ dotenv.config();
 const app = express();
 
 // CORS middleware
-const FRONTEND_URL = "https://www.thetechharvest.com/";
+const FRONTEND_URL = "https://www.thetechharvest.com";
 
 app.use(cors({
   origin: FRONTEND_URL,
