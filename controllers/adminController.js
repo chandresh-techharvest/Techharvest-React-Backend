@@ -3,6 +3,9 @@ import dotenv from "dotenv";
 import ContactForm from "../models/ContactForm.js";
 import Blog from "../models/Blog.js";
 import slugify from "slugify";
+import { put } from "@vercel/blob";
+import NewsLetter from '../models/Newsletter.js'
+
 
 dotenv.config();
 
@@ -13,6 +16,12 @@ const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD;
 // ---------------- LOGIN ADMIN -------------------
 
 export const adminLogin = (req, res) => {
+  console.log("ENV CHECK:", {
+  ADMIN_USERNAME,
+  ADMIN_PASSWORD,
+  JWT_SECRET: process.env.JWT_SECRET ? "SET" : "NOT SET"
+});
+
   const { username, password } = req.body;
 
   if (username !== ADMIN_USERNAME || password !== ADMIN_PASSWORD) {
@@ -59,9 +68,25 @@ export const getContacts = async (req, res) => {
   }
 };
 
+// ----------------FETCH NEWSLETTERS ENTRIES ------------------
+
+export const getNewsLetters = async (req, res) => {
+  try {
+    const newsletters = await NewsLetter.find().sort();
+    return res.status(200).json({
+      success: true,
+      newsletters,
+    });
+  } catch (err) {
+    res.status(500).json({
+      success: false,
+      message: "Error fetching newsletters",
+    });
+  }
+};
+
 // CREATE BLOG (Admin Only)
 export const createBlog = async (req, res) => {
-    console.log(req.body); 
   try {
     const {
       title,
@@ -72,9 +97,17 @@ export const createBlog = async (req, res) => {
       tag,
     } = req.body;
 
+    let imageUrl = null;
+     if (req.file) {
+      const blob = await put(
+        `blogs/${Date.now()}-${req.file.originalname}`,
+        req.file.buffer,
+        { access: "public" }
+      );
+      imageUrl = blob.url;
+    }
     const tagsArray = typeof tag === "string" ? JSON.parse(tag || "[]") : tag || [];
-    // const image = req.file ? req.file.filename : null;
-    const image = req.file ? req.file.path || req.file.location || null : null;
+
 
     // ✅ Generate clean slug
     let baseSlug = slugify(title, {
@@ -98,7 +131,7 @@ export const createBlog = async (req, res) => {
       designation,
       category,
       tag: tagsArray,
-      image,
+      image: imageUrl,
       url: slug,
     });
 
@@ -185,8 +218,6 @@ export const getBlogById = async (req, res) => {
 export const updateBlogBySlug = async (req, res) => {
   try {
     const { title, description, author, designation, category, tag} = req.body;
-    const image = req.file ? req.file.filename : null;
-
     const tagsArray = typeof tag === "string" ? JSON.parse(tag || "[]") : tag || [];
 
     // Find blog by slug
@@ -207,6 +238,16 @@ export const updateBlogBySlug = async (req, res) => {
     blog.category = category;
     blog.tag = tagsArray;
 
+    // handle image update 
+     if (req.file) {
+      const blob = await put(
+        `blogs/${Date.now()}-${req.file.originalname}`,
+        req.file.buffer,
+        { access: "public" }
+      );
+      blog.image = blob.url;
+    }
+
     // Handle title change → regenerate slug
     if (title && title !== oldTitle) {
       let baseSlug = slugify(title, { lower: true, strict: true, trim: true });
@@ -220,11 +261,7 @@ export const updateBlogBySlug = async (req, res) => {
       }
       blog.url = newSlug;
     }
-
-    if (image) blog.image = image;
-
     await blog.save();
-
     res.status(200).json({
       success: true,
       message: "Blog updated successfully",

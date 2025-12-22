@@ -1,6 +1,6 @@
 import mongoose from "mongoose";
 
-const newsletterSchema = new mongoose.Schema(
+const newsLetterSchema = new mongoose.Schema(
   {
     name: {
       type: String,
@@ -21,4 +21,4 @@ const newsletterSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-export default mongoose.model("Newsletter", newsletterSchema);
+export default mongoose.model("NewsLetter", newsLetterSchema);

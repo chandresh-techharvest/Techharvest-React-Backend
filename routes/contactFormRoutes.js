@@ -20,7 +20,6 @@ router.post("/submit", async (req, res) => {
       newsletter,
       token,
     } = req.body;
-    // console.log("Token:",token)
 
     // Basic validation
     if (!firstName || !lastName || !email || !message) {
@@ -64,16 +63,5 @@ router.post("/submit", async (req, res) => {
     });
   }
 });
-
-// // GET — Retrieve all messages (for admin)
-// router.get("/messages", async (req, res) => {
-//   try {
-//     const contacts = await Contact.find().sort({ date: -1 });
-//     res.json(contacts);
-//   } catch (error) {
-//     console.error("Fetch Messages Error:", error);
-//     res.status(500).json({ message: "Failed to fetch messages" });
-//   }
-// });
 
 export default router;
