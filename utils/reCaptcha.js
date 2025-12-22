@@ -1,8 +1,13 @@
 import { RecaptchaEnterpriseServiceClient } from "@google-cloud/recaptcha-enterprise";
 
-// Create the reCAPTCHA client.
-// TODO: Cache the client generation code (recommended) or call client.close() before exiting the method.
-const privateKey = process.env.GOOGLE_PRIVATE_KEY.replace(/\\n/g,"\n");
+if (!process.env.GOOGLE_PRIVATE_KEY) {
+  throw new Error("GOOGLE_PRIVATE_KEY is not set");
+}
+
+const privateKey = process.env.GOOGLE_PRIVATE_KEY.replace(/\\n/g, "\n");
+console.log("GOOGLE_PRIVATE_KEY: ", !!process.env.GOOGLE_PRIVATE_KEY);
+
+// const privateKey = process.env.GOOGLE_PRIVATE_KEY.replace(/\\n/g,"\n");
 const client = new RecaptchaEnterpriseServiceClient({
   projectId: process.env.GCLOUD_PROJECT,
   credentials:{
