@@ -2,7 +2,6 @@ import express from "express";
 import Contact from "../models/ContactForm.js";
 import verifyCaptcha from "../utils/reCaptcha.js";
 
-
 const router = express.Router();
 
 // POST — Submit contact form
@@ -29,11 +28,12 @@ router.post("/submit", async (req, res) => {
     }
 
     // Verify reCAPTCHA
-    const isHuman = await verifyCaptcha(token); 
+    const isHuman = await verifyCaptcha(req.body.token);
+
     if (!isHuman) {
-      return res
-        .status(400)
-        .json({ message: "reCAPTCHA verification failed. Please try again." });
+      return res.status(400).json({
+        message: "reCAPTCHA verification failed. Please try again.",
+      });
     }
 
     // Save form data to MongoDB
