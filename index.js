@@ -20,6 +20,10 @@ app.use(cors({
 }));
 
 app.use(express.json());
+
+// Database connection
+connectDB();
+
 // Routes
 app.use("/newsLetter", newsletterRoutes);
 app.use("/contact", contactFormRoutes);
@@ -39,8 +43,5 @@ app.get("/", (req, res) => {
 app.use((req, res) => {
   res.status(404).json({ error: "Route not found" });
 });
-
-// Database connection
-connectDB();
 
 export default app;
