@@ -41,6 +41,7 @@ export const getBlogBySlug = async (req, res) => {
     res.status(500).json({
       success: false,
       message: "Error fetching blog",
+      error: err.message,
     });
   }
 };

@@ -6,6 +6,7 @@ import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
 import connectDB from "./config/dbconfig.js";
+import caseStudiesRoutes from "./routes/caseStudiesRoutes.js";
 
 dotenv.config();
 
@@ -15,7 +16,7 @@ const app = express();
 const FRONTEND_URL = "https://www.thetechharvest.com";
 
 app.use(cors({
-  origin: FRONTEND_URL,
+  origin: [FRONTEND_URL],
   credentials: true,
 }));
 
@@ -31,6 +32,7 @@ app.use("/contact", contactFormRoutes);
 //Admin only
 app.use("/admin", adminRoutes);
 app.use("/blogs", blogRoutes);
+app.use("/caseStudies", caseStudiesRoutes);
 
 // Test Route
 app.get("/", (req, res) => {
@@ -45,3 +47,6 @@ app.use((req, res) => {
 });
 
 export default app;
+// app.listen(process.env.PORT || 5000, () => {
+//   console.log(`Server is running on port ${process.env.PORT || 5000}`);
+// });
