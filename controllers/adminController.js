@@ -4,8 +4,7 @@ import ContactForm from "../models/ContactForm.js";
 import Blog from "../models/Blog.js";
 import slugify from "slugify";
 import { put } from "@vercel/blob";
-import NewsLetter from '../models/Newsletter.js'
-
+import NewsLetter from "../models/Newsletter.js";
 
 dotenv.config();
 
@@ -17,10 +16,10 @@ const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD;
 
 export const adminLogin = (req, res) => {
   console.log("ENV CHECK:", {
-  ADMIN_USERNAME,
-  ADMIN_PASSWORD,
-  JWT_SECRET: process.env.JWT_SECRET ? "SET" : "NOT SET"
-});
+    ADMIN_USERNAME,
+    ADMIN_PASSWORD,
+    JWT_SECRET: process.env.JWT_SECRET ? "SET" : "NOT SET",
+  });
 
   const { username, password } = req.body;
 
@@ -31,11 +30,9 @@ export const adminLogin = (req, res) => {
     });
   }
 
-  const token = jwt.sign(
-    { username, role: "admin" },
-    process.env.JWT_SECRET,
-    { expiresIn: "2h" }
-  );
+  const token = jwt.sign({ username, role: "admin" }, process.env.JWT_SECRET, {
+    expiresIn: "2h",
+  });
 
   return res.status(200).json({
     success: true,
@@ -88,17 +85,10 @@ export const getNewsLetters = async (req, res) => {
 // CREATE BLOG (Admin Only)
 export const createBlog = async (req, res) => {
   try {
-    const {
-      title,
-      description,
-      author,
-      designation,
-      category,
-      tag,
-    } = req.body;
+    const { title, description, author, designation, category, tag } = req.body;
 
     let imageUrl = null;
-     if (req.file) {
+    if (req.file) {
       const blob = await put(
         `blogs/${Date.now()}-${req.file.originalname}`,
         req.file.buffer,
@@ -106,8 +96,8 @@ export const createBlog = async (req, res) => {
       );
       imageUrl = blob.url;
     }
-    const tagsArray = typeof tag === "string" ? JSON.parse(tag || "[]") : tag || [];
-
+    const tagsArray =
+      typeof tag === "string" ? JSON.parse(tag || "[]") : tag || [];
 
     // ✅ Generate clean slug
     let baseSlug = slugify(title, {
@@ -183,8 +173,7 @@ export const getBlogBySlug = async (req, res) => {
       success: true,
       blog,
     });
-  }
-  catch (err) {
+  } catch (err) {
     res.status(500).json({
       success: false,
       message: "Error fetching blog",
@@ -217,8 +206,9 @@ export const getBlogById = async (req, res) => {
 // UPDATE BLOG BY SLUG (Admin Only)
 export const updateBlogBySlug = async (req, res) => {
   try {
-    const { title, description, author, designation, category, tag} = req.body;
-    const tagsArray = typeof tag === "string" ? JSON.parse(tag || "[]") : tag || [];
+    const { title, description, author, designation, category, tag } = req.body;
+    const tagsArray =
+      typeof tag === "string" ? JSON.parse(tag || "[]") : tag || [];
 
     // Find blog by slug
     const blog = await Blog.findOne({ url: req.params.slug });
@@ -238,8 +228,8 @@ export const updateBlogBySlug = async (req, res) => {
     blog.category = category;
     blog.tag = tagsArray;
 
-    // handle image update 
-     if (req.file) {
+    // handle image update
+    if (req.file) {
       const blob = await put(
         `blogs/${Date.now()}-${req.file.originalname}`,
         req.file.buffer,
@@ -254,9 +244,7 @@ export const updateBlogBySlug = async (req, res) => {
       let newSlug = baseSlug;
       let count = 1;
 
-      while (
-        await Blog.findOne({ url: newSlug, _id: { $ne: blog._id } })
-      ) {
+      while (await Blog.findOne({ url: newSlug, _id: { $ne: blog._id } })) {
         newSlug = `${baseSlug}-${count++}`;
       }
       blog.url = newSlug;
@@ -274,7 +262,7 @@ export const updateBlogBySlug = async (req, res) => {
       error: err.message,
     });
   }
-};  
+};
 
 // DELETE BLOG (Admin Only)
 export const deleteBlog = async (req, res) => {
@@ -307,10 +295,7 @@ export const setFeaturedBlog = async (req, res) => {
     const { slug } = req.params;
 
     // 1️⃣ Remove previous featured blog
-    await Blog.updateMany(
-      { featured: true },
-      { $set: { featured: false } }
-    );
+    await Blog.updateMany({ featured: true }, { $set: { featured: false } });
 
     // 2️⃣ Set new featured blog
     const blog = await Blog.findOneAndUpdate(
