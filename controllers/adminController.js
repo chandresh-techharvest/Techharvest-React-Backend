@@ -15,12 +15,6 @@ const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD;
 // ---------------- LOGIN ADMIN -------------------
 
 export const adminLogin = (req, res) => {
-  console.log("ENV CHECK:", {
-    ADMIN_USERNAME,
-    ADMIN_PASSWORD,
-    JWT_SECRET: process.env.JWT_SECRET ? "SET" : "NOT SET",
-  });
-
   const { username, password } = req.body;
 
   if (username !== ADMIN_USERNAME || password !== ADMIN_PASSWORD) {
@@ -85,19 +79,44 @@ export const getNewsLetters = async (req, res) => {
 // CREATE BLOG (Admin Only)
 export const createBlog = async (req, res) => {
   try {
-    const { title, description, author, designation, category, tag } = req.body;
+    const { title, description, category, tag, reviewedBy, authorName, authorDesignation, authorDescription, 
+      authorProfile, metaTitle, metaDescription, metaTag, focusKeyword, ogTitle, ogDescription } = req.body;
 
     let imageUrl = null;
-    if (req.file) {
-      const blob = await put(
-        `blogs/${Date.now()}-${req.file.originalname}`,
-        req.file.buffer,
-        { access: "public" }
-      );
-      imageUrl = blob.url;
-    }
+    let ogImageUrl = null;
+
+if (req.files?.image?.[0]) {
+  const file = req.files.image[0];
+
+  const blob = await put(
+    `blogs/${Date.now()}-${file.originalname}`,
+    file.buffer,
+    { access: "public" }
+  );
+
+  imageUrl = blob.url;
+}
+
+if (req.files?.ogImage?.[0]) {
+  const file = req.files.ogImage[0];
+
+  const blob = await put(
+    `blogs/og/${Date.now()}-${file.originalname}`,
+    file.buffer,
+    { access: "public" }
+  );
+
+  ogImageUrl = blob.url;
+}
+
     const tagsArray =
       typeof tag === "string" ? JSON.parse(tag || "[]") : tag || [];
+
+    const metaTagArray =
+      typeof metaTag === "string" ? JSON.parse(metaTag || "[]") : metaTag || [];
+    
+    const focusKeywordArray =
+      typeof focusKeyword === "string" ? JSON.parse(focusKeyword || "[]") : focusKeyword || [];
 
     // ✅ Generate clean slug
     let baseSlug = slugify(title, {
@@ -117,10 +136,20 @@ export const createBlog = async (req, res) => {
     const blog = await Blog.create({
       title,
       description,
-      author,
-      designation,
       category,
       tag: tagsArray,
+      reviewedBy,
+      authorName, 
+      authorDesignation, 
+      authorDescription, 
+      authorProfile, 
+      metaTitle, 
+      metaDescription,
+      metaTag : metaTagArray, 
+      focusKeyword: focusKeywordArray, 
+      ogTitle, 
+      ogDescription,
+      ogImage: ogImageUrl,
       image: imageUrl,
       url: slug,
     });
@@ -206,9 +235,16 @@ export const getBlogById = async (req, res) => {
 // UPDATE BLOG BY SLUG (Admin Only)
 export const updateBlogBySlug = async (req, res) => {
   try {
-    const { title, description, author, designation, category, tag } = req.body;
+    const { title, description, category, tag, reviewedBy, authorName, authorDesignation, authorDescription, 
+      authorProfile, metaTitle, metaDescription, metaTag, focusKeyword, ogTitle, ogDescription } = req.body;
     const tagsArray =
       typeof tag === "string" ? JSON.parse(tag || "[]") : tag || [];
+
+    const metaTagArray =
+      typeof metaTag === "string" ? JSON.parse(metaTag || "[]") : metaTag || [];
+      
+    const focusKeywordArray =
+      typeof focusKeyword === "string" ? JSON.parse(focusKeyword || "[]") : focusKeyword || [];
 
     // Find blog by slug
     const blog = await Blog.findOne({ url: req.params.slug });
@@ -223,19 +259,42 @@ export const updateBlogBySlug = async (req, res) => {
     const oldTitle = blog.title;
     blog.title = title;
     blog.description = description;
-    blog.author = author;
-    blog.designation = designation;
     blog.category = category;
     blog.tag = tagsArray;
+    blog.reviewedBy = reviewedBy;
+    blog.authorName = authorName;
+    blog.authorDesignation = authorDesignation;
+    blog.authorDescription = authorDescription;
+    blog.authorProfile = authorProfile;
+    blog.metaTitle = metaTitle;
+    blog.metaDescription = metaDescription;
+    blog.metaTag = metaTagArray;
+    blog.focusKeyword = focusKeywordArray;
+    blog.ogTitle = ogTitle;
+    blog.ogDescription = ogDescription;
 
-    // handle image update
-    if (req.file) {
+    // handle blob image update
+    if (req.files?.image?.[0]) {
+      const file = req.files.image[0];
+
       const blob = await put(
-        `blogs/${Date.now()}-${req.file.originalname}`,
-        req.file.buffer,
+        `blogs/${Date.now()}-${file.originalname}`,
+        file.buffer,
         { access: "public" }
       );
       blog.image = blob.url;
+    }
+
+    // handle og image update
+    if (req.files?.ogImage?.[0]) {
+      const file = req.files.ogImage[0];
+
+      const blob = await put(
+        `blogs/og/${Date.now()}-${file.originalname}`,
+        file.buffer,
+        { access: "public" }
+      );
+      blog.ogImage = blob.url;
     }
 
     // Handle title change → regenerate slug

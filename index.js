@@ -13,6 +13,7 @@ dotenv.config();
 const app = express();
 
 // CORS middleware
+// const FRONTEND_URL = "http://localhost:5173";
 const FRONTEND_URL = "https://www.thetechharvest.com";
 
 app.use(cors({
