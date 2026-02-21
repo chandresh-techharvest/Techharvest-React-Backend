@@ -15,8 +15,15 @@ router.get("/featured", getFeaturedBlog);
 router.get("/id/:id", getBlogById);
 
 // Admin Protected
-router.post("/create", adminAuth, upload.single("image"), createBlog);
-router.put("/slug/:slug", adminAuth, upload.single("image"), updateBlogBySlug);
+router.post("/create", adminAuth, 
+    upload.fields([
+        { name: "image", maxCount: 1 },
+        { name: "ogImage", maxCount: 1 },
+    ]), createBlog);
+router.put("/slug/:slug", adminAuth, upload.fields([
+        { name: "image", maxCount: 1 },
+        { name: "ogImage", maxCount: 1 },
+    ]), updateBlogBySlug);
 router.delete("/delete/:id", adminAuth, deleteBlog);
 
 router.put("/featured/:slug", adminAuth, setFeaturedBlog);
