@@ -1,6 +1,6 @@
 import express from "express";
 import adminAuth from "../middleware/adminAuth.js";
-import { createBlog, getBlogById, updateBlogBySlug, deleteBlog, setFeaturedBlog } from "../controllers/adminController.js";
+import { createBlog, uploadEditorImage, getBlogById, updateBlogBySlug, deleteBlog, setFeaturedBlog } from "../controllers/adminController.js";
 import { getBlogs, getBlogBySlug, getFeaturedBlog, } from "../controllers/blogController.js";
 
 const router = express.Router();
@@ -20,6 +20,7 @@ router.post("/create", adminAuth,
         { name: "image", maxCount: 1 },
         { name: "ogImage", maxCount: 1 },
     ]), createBlog);
+router.post("/upload-editor-image", adminAuth, upload.single("file"), uploadEditorImage);
 router.put("/slug/:slug", adminAuth, upload.fields([
         { name: "image", maxCount: 1 },
         { name: "ogImage", maxCount: 1 },

@@ -169,43 +169,34 @@ if (req.files?.ogImage?.[0]) {
   }
 };
 
-// GET ALL BLOGS (Public)
-export const getBlogs = async (req, res) => {
+export const uploadEditorImage = async (req, res) => {
   try {
-    const blogs = await Blog.find().sort({ createdAt: -1 });
-
-    res.status(200).json({
-      success: true,
-      blogs,
-    });
-  } catch (err) {
-    res.status(500).json({
-      success: false,
-      message: "Error fetching blogs",
-    });
-  }
-};
-
-// GET BLOG BY SLUG (Public)
-export const getBlogBySlug = async (req, res) => {
-  try {
-    const { slug } = req.params;
-
-    const blog = await Blog.findOne({ url: slug });
-    if (!blog) {
-      return res.status(404).json({
+    if (!req.file) {
+      return res.status(400).json({
         success: false,
-        message: "Blog not found",
+        message: "No file uploaded",
       });
     }
-    res.status(200).json({
-      success: true,
-      blog,
+
+    const file = req.file;
+
+    const blob = await put(
+      `blogs/editor/${Date.now()}-${file.originalname}`,
+      file.buffer,
+      {
+        access: "public",
+      }
+    );
+
+    // IMPORTANT: TinyMCE requires "location"
+    return res.status(200).json({
+      location: blob.url,
     });
-  } catch (err) {
-    res.status(500).json({
+  } catch (error) {
+    console.error("Editor image upload error:", error);
+    return res.status(500).json({
       success: false,
-      message: "Error fetching blog",
+      message: "Image upload failed",
     });
   }
 };
@@ -235,7 +226,7 @@ export const getBlogById = async (req, res) => {
 // UPDATE BLOG BY SLUG (Admin Only)
 export const updateBlogBySlug = async (req, res) => {
   try {
-    const { title, description, category, tag, reviewedBy, authorName, authorDesignation, authorDescription, 
+    const { title, description, category, tag, reviewedBy, url, authorName, authorDesignation, authorDescription, 
       authorProfile, metaTitle, metaDescription, metaTag, focusKeyword, ogTitle, ogDescription } = req.body;
     const tagsArray =
       typeof tag === "string" ? JSON.parse(tag || "[]") : tag || [];
@@ -256,12 +247,13 @@ export const updateBlogBySlug = async (req, res) => {
     }
 
     // Prepare update
-    const oldTitle = blog.title;
+    // const oldTitle = blog.title;
     blog.title = title;
     blog.description = description;
     blog.category = category;
     blog.tag = tagsArray;
     blog.reviewedBy = reviewedBy;
+    blog.url = url;
     blog.authorName = authorName;
     blog.authorDesignation = authorDesignation;
     blog.authorDescription = authorDescription;
@@ -298,16 +290,16 @@ export const updateBlogBySlug = async (req, res) => {
     }
 
     // Handle title change → regenerate slug
-    if (title && title !== oldTitle) {
-      let baseSlug = slugify(title, { lower: true, strict: true, trim: true });
-      let newSlug = baseSlug;
-      let count = 1;
+    // if (title && title !== oldTitle) {
+    //   let baseSlug = slugify(title, { lower: true, strict: true, trim: true });
+    //   let newSlug = baseSlug;
+    //   let count = 1;
 
-      while (await Blog.findOne({ url: newSlug, _id: { $ne: blog._id } })) {
-        newSlug = `${baseSlug}-${count++}`;
-      }
-      blog.url = newSlug;
-    }
+    //   while (await Blog.findOne({ url: newSlug, _id: { $ne: blog._id } })) {
+    //     newSlug = `${baseSlug}-${count++}`;
+    //   }
+    //   blog.url = newSlug;
+    // }
     await blog.save();
     res.status(200).json({
       success: true,
