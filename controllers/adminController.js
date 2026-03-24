@@ -13,9 +13,9 @@ const ADMIN_USERNAME = process.env.ADMIN_USERNAME;
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD;
 
 // ---------------- LOGIN ADMIN -------------------
-
 export const adminLogin = (req, res) => {
   const { username, password } = req.body;
+  // console.log(req.body);
 
   if (username !== ADMIN_USERNAME || password !== ADMIN_PASSWORD) {
     return res.status(401).json({
@@ -25,7 +25,7 @@ export const adminLogin = (req, res) => {
   }
 
   const token = jwt.sign({ username, role: "admin" }, process.env.JWT_SECRET, {
-    expiresIn: "2h",
+    expiresIn: "24h",
   });
 
   return res.status(200).json({
@@ -35,8 +35,7 @@ export const adminLogin = (req, res) => {
   });
 };
 
-// ----------- ADMIN LOGOUT ------------
-
+// ---------------- ADMIN LOGOUT ------------
 export const adminLogout = (req, res) => {
   return res.status(200).json({
     success: true,
@@ -45,7 +44,6 @@ export const adminLogout = (req, res) => {
 };
 
 // ---------------- FETCH CONTACT ENTRIES -------------------
-
 export const getContacts = async (req, res) => {
   try {
     const data = await ContactForm.find().sort();
@@ -59,8 +57,7 @@ export const getContacts = async (req, res) => {
   }
 };
 
-// ----------------FETCH NEWSLETTERS ENTRIES ------------------
-
+// ---------------- FETCH NEWSLETTERS ENTRIES ------------------
 export const getNewsLetters = async (req, res) => {
   try {
     const newsletters = await NewsLetter.find().sort();
@@ -79,79 +76,115 @@ export const getNewsLetters = async (req, res) => {
 // CREATE BLOG (Admin Only)
 export const createBlog = async (req, res) => {
   try {
-    const { title, description, category, tag, reviewedBy, authorName, authorDesignation, authorDescription, 
-      authorProfile, metaTitle, metaDescription, metaTag, focusKeyword, ogTitle, ogDescription } = req.body;
+    const {
+      title,
+      url,
+      description,
+      category,
+      tag,
+      reviewedBy,
+      authorName,
+      authorDesignation,
+      authorDescription,
+      authorProfile,
+      metaTitle,
+      metaDescription,
+      metaTag,
+      focusKeyword,
+      ogTitle,
+      ogDescription,
+    } = req.body;
 
     let imageUrl = null;
     let ogImageUrl = null;
 
-if (req.files?.image?.[0]) {
-  const file = req.files.image[0];
+    if (req.files?.image?.[0]) {
+      const file = req.files.image[0];
 
-  const blob = await put(
-    `blogs/${Date.now()}-${file.originalname}`,
-    file.buffer,
-    { access: "public" }
-  );
+      const blob = await put(
+        `blogs/${Date.now()}-${file.originalname}`,
+        file.buffer,
+        { access: "public" },
+      );
 
-  imageUrl = blob.url;
-}
+      imageUrl = blob.url;
+    }
 
-if (req.files?.ogImage?.[0]) {
-  const file = req.files.ogImage[0];
+    if (req.files?.ogImage?.[0]) {
+      const file = req.files.ogImage[0];
 
-  const blob = await put(
-    `blogs/og/${Date.now()}-${file.originalname}`,
-    file.buffer,
-    { access: "public" }
-  );
+      const blob = await put(
+        `blogs/og/${Date.now()}-${file.originalname}`,
+        file.buffer,
+        { access: "public" },
+      );
 
-  ogImageUrl = blob.url;
-}
+      ogImageUrl = blob.url;
+    }
 
     const tagsArray =
       typeof tag === "string" ? JSON.parse(tag || "[]") : tag || [];
 
     const metaTagArray =
       typeof metaTag === "string" ? JSON.parse(metaTag || "[]") : metaTag || [];
-    
+
     const focusKeywordArray =
-      typeof focusKeyword === "string" ? JSON.parse(focusKeyword || "[]") : focusKeyword || [];
+      typeof focusKeyword === "string"
+        ? JSON.parse(focusKeyword || "[]")
+        : focusKeyword || [];
 
-    // ✅ Generate clean slug
-    let baseSlug = slugify(title, {
-      lower: true,
-      strict: true,
-      trim: true,
-    });
+    // Generate clean slug
+    let baseSlug = url
+      ? slugify(url, { lower: true, strict: true, trim: true })
+      : slugify(title, { lower: true, strict: true, trim: true });
 
-    let slug = baseSlug;
-    let count = 1;
+    if (!baseSlug) {
+      return res.status(400).json({
+        success: false,
+        message: "Could not generate a slug. Please provide a title or slug.",
+      });
+    }
 
-    // ✅ Ensure unique slug
-    while (await Blog.findOne({ url: slug })) {
-      slug = `${baseSlug}-${count++}`;
+        const slugProvidedByAdmin = Boolean(url?.trim());
+ 
+    if (slugProvidedByAdmin) {
+      const exists = await Blog.findOne({ url: baseSlug });
+      if (exists) {
+        return res.status(409).json({
+          success: false,
+          message: `The slug "${baseSlug}" is already in use. Please choose a different slug.`,
+        });
+      }
+    }
+ 
+    // Auto-uniquify only when the slug was generated from the title
+    let finalSlug = baseSlug;
+    if (!slugProvidedByAdmin) {
+      let count = 1;
+      while (await Blog.findOne({ url: finalSlug })) {
+        finalSlug = `${baseSlug}-${count++}`;
+      }
     }
 
     const blog = await Blog.create({
       title,
+      url: finalSlug,
       description,
       category,
       tag: tagsArray,
       reviewedBy,
-      authorName, 
-      authorDesignation, 
-      authorDescription, 
-      authorProfile, 
-      metaTitle, 
+      authorName,
+      authorDesignation,
+      authorDescription,
+      authorProfile,
+      metaTitle,
       metaDescription,
-      metaTag : metaTagArray, 
-      focusKeyword: focusKeywordArray, 
-      ogTitle, 
+      metaTag: metaTagArray,
+      focusKeyword: focusKeywordArray,
+      ogTitle,
       ogDescription,
       ogImage: ogImageUrl,
       image: imageUrl,
-      url: slug,
     });
 
     res.status(201).json({
@@ -185,7 +218,7 @@ export const uploadEditorImage = async (req, res) => {
       file.buffer,
       {
         access: "public",
-      }
+      },
     );
 
     // IMPORTANT: TinyMCE requires "location"
@@ -226,16 +259,14 @@ export const getBlogById = async (req, res) => {
 // UPDATE BLOG BY SLUG (Admin Only)
 export const updateBlogBySlug = async (req, res) => {
   try {
-    const { title, description, category, tag, reviewedBy, url, authorName, authorDesignation, authorDescription, 
+    const {
+      title, description, category, tag, reviewedBy, url, authorName, authorDesignation, authorDescription, 
       authorProfile, metaTitle, metaDescription, metaTag, focusKeyword, ogTitle, ogDescription } = req.body;
-    const tagsArray =
-      typeof tag === "string" ? JSON.parse(tag || "[]") : tag || [];
+    const tagsArray = typeof tag === "string" ? JSON.parse(tag || "[]") : tag || [];
 
-    const metaTagArray =
-      typeof metaTag === "string" ? JSON.parse(metaTag || "[]") : metaTag || [];
-      
-    const focusKeywordArray =
-      typeof focusKeyword === "string" ? JSON.parse(focusKeyword || "[]") : focusKeyword || [];
+    const metaTagArray = typeof metaTag === "string" ? JSON.parse(metaTag || "[]") : metaTag || [];
+
+    const focusKeywordArray = typeof focusKeyword === "string" ? JSON.parse(focusKeyword || "[]") : focusKeyword || [];
 
     // Find blog by slug
     const blog = await Blog.findOne({ url: req.params.slug });
@@ -246,14 +277,24 @@ export const updateBlogBySlug = async (req, res) => {
       });
     }
 
+    if (url && url !== req.params.slug) {
+      const newSlug    = slugify(url, { lower: true, strict: true, trim: true });
+      const duplicate  = await Blog.findOne({ url: newSlug, _id: { $ne: blog._id } });
+      if (duplicate) {
+        return res.status(409).json({
+          success: false,
+          message: `The slug "${newSlug}" is already in use by another blog.`,
+        });
+      }
+      blog.url = newSlug;
+    }
+
     // Prepare update
-    // const oldTitle = blog.title;
     blog.title = title;
     blog.description = description;
     blog.category = category;
     blog.tag = tagsArray;
     blog.reviewedBy = reviewedBy;
-    blog.url = url;
     blog.authorName = authorName;
     blog.authorDesignation = authorDesignation;
     blog.authorDescription = authorDescription;
@@ -272,7 +313,7 @@ export const updateBlogBySlug = async (req, res) => {
       const blob = await put(
         `blogs/${Date.now()}-${file.originalname}`,
         file.buffer,
-        { access: "public" }
+        { access: "public" },
       );
       blog.image = blob.url;
     }
@@ -284,22 +325,11 @@ export const updateBlogBySlug = async (req, res) => {
       const blob = await put(
         `blogs/og/${Date.now()}-${file.originalname}`,
         file.buffer,
-        { access: "public" }
+        { access: "public" },
       );
       blog.ogImage = blob.url;
     }
 
-    // Handle title change → regenerate slug
-    // if (title && title !== oldTitle) {
-    //   let baseSlug = slugify(title, { lower: true, strict: true, trim: true });
-    //   let newSlug = baseSlug;
-    //   let count = 1;
-
-    //   while (await Blog.findOne({ url: newSlug, _id: { $ne: blog._id } })) {
-    //     newSlug = `${baseSlug}-${count++}`;
-    //   }
-    //   blog.url = newSlug;
-    // }
     await blog.save();
     res.status(200).json({
       success: true,
@@ -345,14 +375,14 @@ export const setFeaturedBlog = async (req, res) => {
   try {
     const { slug } = req.params;
 
-    // 1️⃣ Remove previous featured blog
+    // Remove previous featured blog
     await Blog.updateMany({ featured: true }, { $set: { featured: false } });
 
-    // 2️⃣ Set new featured blog
+    // Set new featured blog
     const blog = await Blog.findOneAndUpdate(
       { url: slug },
       { featured: true },
-      { new: true }
+      { new: true },
     );
 
     if (!blog) {

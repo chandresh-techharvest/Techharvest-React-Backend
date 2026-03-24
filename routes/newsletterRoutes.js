@@ -1,6 +1,5 @@
 import express from "express";
 import Newsletter from "../models/Newsletter.js";
-import adminAuth from "../middleware/adminAuth.js";
 
 const router = express.Router();
 
