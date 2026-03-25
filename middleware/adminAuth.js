@@ -5,8 +5,13 @@ dotenv.config();
 const adminAuth = (req, res, next) => {
   const authHeader = req.headers.authorization;
 
-  if (!authHeader)
-    return res.status(401).json({ success: false, message: "Token missing" });
+  // No Authorization header at all
+  if (!authHeader || !authHeader.startsWith("Bearer ")) {
+    return res.status(401).json({
+      success: false,
+      message: "Token missing",
+    });
+  }
 
   const token = authHeader.split(" ")[1];
 
@@ -14,13 +19,20 @@ const adminAuth = (req, res, next) => {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
     if (decoded.role !== "admin") {
-      return res.status(403).json({ message: "Access denied" });
+      return res.status(403).json({
+        success: false,
+        message: "Access denied",
+      });
     }
 
     req.admin = decoded;
     next();
   } catch (err) {
-    res.status(401).json({ success: false, message: "Invalid token" });
+    // Covers both TokenExpiredError and JsonWebTokenError
+    return res.status(401).json({
+      success: false,
+      message: "Session Expired. Please Login Again!",
+    });
   }
 };
 

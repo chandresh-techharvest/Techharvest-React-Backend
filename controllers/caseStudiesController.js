@@ -90,7 +90,7 @@ export const createCaseStudy = async (req, res) => {
     const techArray =
       typeof tech === "string" ? JSON.parse(tech || "[]") : tech || [];
 
-    // ✅ Generate clean slug
+    //Generate clean slug
     let baseSlug = slugify(title, {
       lower: true,
       strict: true,
@@ -100,7 +100,7 @@ export const createCaseStudy = async (req, res) => {
     let slug = baseSlug;
     let count = 1;
 
-    // ✅ Ensure unique slug
+    // Ensure unique slug
     while (await CaseStudies.findOne({ url: slug })) {
       slug = `${baseSlug}-${count++}`;
     }
@@ -267,10 +267,10 @@ export const setFeaturedCaseStudy = async (req, res) => {
   try {
     const { slug } = req.params;
 
-    // 1️⃣ Remove previous featured CaseStudy
+    // Remove previous featured CaseStudy
     await CaseStudies.updateMany({ featured: true }, { $set: { featured: false } });
 
-    // 2️⃣ Set new featured CaseStudy
+    // Set new featured CaseStudy
     const caseStudy = await CaseStudies.findOneAndUpdate(
       { url: slug },
       { featured: true },

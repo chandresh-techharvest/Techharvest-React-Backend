@@ -7,10 +7,10 @@ const router = express.Router();
 
 // Login Route
 router.post("/login", adminLogin);
+router.post("/logout", adminLogout);
 
 // Protected Route
 router.get("/contacts", adminAuth, getContacts);
 router.get("/newsLetters", adminAuth, getNewsLetters);
-router.post("/logout", adminAuth, adminLogout);
 
 export default router;

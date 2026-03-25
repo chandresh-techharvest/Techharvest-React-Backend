@@ -62,4 +62,3 @@ export const getFeaturedBlog = async (req, res) => {
     });
   }
 };
-
